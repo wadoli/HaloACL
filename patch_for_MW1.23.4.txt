@@ -1,0 +1,652 @@
+diff -u -r -N mediawiki-1.23.4/includes/actions/HistoryAction.php m23.4/includes/actions/HistoryAction.php
+--- mediawiki-1.23.4/includes/actions/HistoryAction.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/actions/HistoryAction.php	2014-10-11 09:37:54.736815808 +0200
+@@ -650,7 +650,16 @@
+ 		}
+ 
+ 		# Text following the character difference is added just before running hooks
+-		$s2 = Linker::revComment( $rev, false, true );
++		
++		/*op-patch|TS|2009-11-05|HaloACL|Protected properties|start*/
++		// 
++		global $haclgProtectProperties;
++		$s2 = '';
++		if (!$haclgProtectProperties) {
++			// The comment for an article might reveal values of protected properties
++			$s2 = Linker::revComment( $rev, false, true );
++		}
++		/*op-patch|TS|2009-11-05|end*/
+ 
+ 		if ( $notificationtimestamp && ( $row->rev_timestamp >= $notificationtimestamp ) ) {
+ 			$s2 .= ' <span class="updatedmarker">' . $this->msg( 'updatedmarker' )->escaped() . '</span>';
+@@ -709,6 +718,7 @@
+ 		}
+ 
+ 		# Include separator between character difference and following text
++
+ 		if ( $s2 !== '' ) {
+ 			$s .= ' <span class="mw-changeslist-separator">. .</span> ' . $s2;
+ 		}
+diff -u -r -N mediawiki-1.23.4/includes/diff/TableDiffFormatter.php m23.4/includes/diff/TableDiffFormatter.php
+--- mediawiki-1.23.4/includes/diff/TableDiffFormatter.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/diff/TableDiffFormatter.php	2014-10-11 09:37:53.448809426 +0200
+@@ -94,7 +94,21 @@
+ 	 * @return string
+ 	 */
+ 	protected function addedLine( $line ) {
+-		return $this->wrapLine( '+', 'diff-addedline', $line );
++		global $haclgProtectProperties;
++		if (!$haclgProtectProperties || !defined('SMW_VERSION') || !strpos($line, "::") ) {
++			$file3 = "/home/woj/code/m23.4/3.txt";
++			$fh3 = fopen($file3, 'w');
++			$content3 = $line;
++			fwrite($fh3, $content3);
++			fclose($fh3);				
++			// Properties are not protected or no properties in line - everything can be processed
++			return $this->wrapLine( '+++', 'diff-addedline', $line );
++		} else { // properties in text
++			$regexpattern = '/::[^\]]*/';
++			$regexreplace = '::Property value removed by HaloACL';
++			$line2 = preg_replace($regexpattern, $regexreplace, $line);
++			return $this->wrapLine( '+', 'diff-addedline', $line2 );
++		} 	
+ 	}
+ 
+ 	/**
+@@ -105,7 +119,16 @@
+ 	 * @return string
+ 	 */
+ 	protected function deletedLine( $line ) {
+-		return $this->wrapLine( '−', 'diff-deletedline', $line );
++		global $haclgProtectProperties;
++		if (!$haclgProtectProperties || !defined('SMW_VERSION') || !strpos($line, "::") ) {
++			// Properties are not protected or no properties in line - everything can be processed
++			return $this->wrapLine( '-', 'diff-addedline', $line );
++		} else { // properties in text
++			$regexpattern = '/::[^\]]*/';
++			$regexreplace = '::Property value removed by HaloACL';
++			$line2 = preg_replace($regexpattern, $regexreplace, $line);
++			return $this->wrapLine( '-', 'diff-addedline', $line2 );
++		} 			
+ 	}
+ 
+ 	/**
+@@ -116,7 +139,16 @@
+ 	 * @return string
+ 	 */
+ 	protected function contextLine( $line ) {
+-		return $this->wrapLine( '&#160;', 'diff-context', $line );
++		global $haclgProtectProperties;
++		if (!$haclgProtectProperties || !defined('SMW_VERSION') || !strpos($line, "::") ) {
++			// Properties are not protected or no properties in line - everything can be processed
++			return $this->wrapLine( '&#160', 'diff-addedline', $line );
++		} else { // properties in text
++			$regexpattern = '/::[^\]]*/';
++			$regexreplace = '::Property value removed by HaloACL';
++			$line2 = preg_replace($regexpattern, $regexreplace, $line);
++			return $this->wrapLine( '&#160', 'diff-addedline', $line2 );
++		} 			
+ 	}
+ 
+ 	/**
+diff -u -r -N mediawiki-1.23.4/includes/QueryPage.php m23.4/includes/QueryPage.php
+--- mediawiki-1.23.4/includes/QueryPage.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/QueryPage.php	2014-10-11 09:37:54.924816739 +0200
+@@ -610,6 +610,21 @@
+ 			# $res might contain the whole 1,000 rows, so we read up to
+ 			# $num [should update this to use a Pager]
+ 			for ( $i = 0; $i < $num && $row = $res->fetchObject(); $i++ ) {
++				/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++				// See http://dmwiki.ontoprise.com/dmwiki/index.php/SafeTitle
++				$title = null;
++				if (isset($row->namespace) && isset($row->title)) {
++					$title = Title::makeTitleSafe( $row->namespace, $row->title );
++				} else if (isset($row->id)) {
++					$title = Title::newFromID($row->id);
++				} else if (isset($row->type) && $row->type === 'Templates' 
++							&& isset($row->title)) {
++					$title = Title::makeTitleSafe(NS_TEMPLATE, $row->title);
++				}
++				if ($title && !$title->userCanReadEx()) {
++					continue;
++				}
++				/*op-patch|TS|2009-06-19|end*/
+ 				$line = $this->formatResult( $skin, $row );
+ 				if ( $line ) {
+ 					$attr = ( isset( $row->usepatrol ) && $row->usepatrol && $row->patrolled == 0 )
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialAllpages.php m23.4/includes/specials/SpecialAllpages.php
+--- mediawiki-1.23.4/includes/specials/SpecialAllpages.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialAllpages.php	2014-10-11 09:37:55.572819949 +0200
+@@ -412,6 +412,12 @@
+ 				$out = Xml::openElement( 'table', array( 'class' => 'mw-allpages-table-chunk' ) );
+ 				while ( ( $n < $this->maxPerPage ) && ( $s = $res->fetchObject() ) ) {
+ 					$t = Title::newFromRow( $s );
++					/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++					// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++					if ($t && !$t->userCanReadEx()) {
++						continue; 
++					}
++					/*op-patch|TS|2009-06-19|end*/  
+ 					if ( $t ) {
+ 						$link = ( $s->page_is_redirect ? '<div class="allpagesredirect">' : '' ) .
+ 							Linker::link( $t ) .
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialCategories.php m23.4/includes/specials/SpecialCategories.php
+--- mediawiki-1.23.4/includes/specials/SpecialCategories.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialCategories.php	2014-10-11 09:37:55.516819675 +0200
+@@ -172,6 +172,12 @@
+ 
+ 	function formatRow( $result ) {
+ 		$title = new TitleValue( NS_CATEGORY, $result->cat_title );
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		if (!$title->userCanReadEx()) {
++			return "";
++		}
++		/*op-patch|TS|2009-06-19|end*/
+ 		$text = $title->getText();
+ 		$link = $this->linkRenderer->renderHtmlLink( $title, $text );
+ 
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialContributions.php m23.4/includes/specials/SpecialContributions.php
+--- mediawiki-1.23.4/includes/specials/SpecialContributions.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialContributions.php	2014-10-11 09:37:55.612820144 +0200
+@@ -973,6 +973,9 @@
+ 			$classes = array();
+ 
+ 			$page = Title::newFromRow( $row );
++			if (!$page->userCanReadEx()) {
++				return "";
++			}
+ 			$link = Linker::link(
+ 				$page,
+ 				htmlspecialchars( $page->getPrefixedText() ),
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialListfiles.php m23.4/includes/specials/SpecialListfiles.php
+--- mediawiki-1.23.4/includes/specials/SpecialListfiles.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialListfiles.php	2014-10-11 09:37:55.516819675 +0200
+@@ -388,6 +388,31 @@
+ 		# Do a link batch query for names and userpages
+ 		UserCache::singleton()->doQuery( $userIds, array( 'userpage' ), __METHOD__ );
+ 	}
++	
++	function formatRow( $row ) {
++		
++		/*op-patch*/
++		$fieldNames = $this->getFieldNames();
++		$value = isset( $row->img_name ) ? $row->img_name : null;
++		$filePage = Title::makeTitleSafe( NS_FILE, $value );
++		if (!$filePage->userCanReadEx()) {
++			return "";
++		}
++		/*op-patch*/
++		$this->mCurrentRow = $row;  	# In case formatValue etc need to know
++		$s = Xml::openElement( 'tr', $this->getRowAttrs( $row ) );
++		$fieldNames = $this->getFieldNames();
++		foreach ( $fieldNames as $field => $name ) {
++			$value = isset( $row->$field ) ? $row->$field : null;
++			$formatted = strval( $this->formatValue( $field, $value ) );
++			if ( $formatted == '' ) {
++				$formatted = '&#160;';
++			}
++			$s .= Xml::tags( 'td', $this->getCellAttrs( $field, $value ), $formatted );
++		}
++		$s .= "</tr>\n";
++		return $s;
++	}
+ 
+ 	/**
+ 	 * @param string $field
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialListredirects.php m23.4/includes/specials/SpecialListredirects.php
+--- mediawiki-1.23.4/includes/specials/SpecialListredirects.php	2014-09-24 21:55:14.000000000 +0200
++++ m23.4/includes/specials/SpecialListredirects.php	2014-10-11 09:37:55.512819638 +0200
+@@ -122,6 +122,12 @@
+ 
+ 		# Find out where the redirect leads
+ 		$target = $this->getRedirectTarget( $result );
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		if (!$target->userCanReadEx()) {
++			return;
++		}
++		/*op-patch|TS|2009-06-19|end*/ 
+ 		if ( $target ) {
+ 			# Make a link to the destination page
+ 			$lang = $this->getLanguage();
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialNewimages.php m23.4/includes/specials/SpecialNewimages.php
+--- mediawiki-1.23.4/includes/specials/SpecialNewimages.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialNewimages.php	2014-10-11 09:37:55.516819675 +0200
+@@ -141,6 +141,9 @@
+ 		$user = User::newFromId( $row->img_user );
+ 
+ 		$title = Title::makeTitle( NS_FILE, $name );
++		if (!$title->userCanReadEx()) {
++			return "";
++		}
+ 		$ul = Linker::link( $user->getUserpage(), $user->getName() );
+ 		$time = $this->getLanguage()->userTimeAndDate( $row->img_timestamp, $this->getUser() );
+ 
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialNewpages.php m23.4/includes/specials/SpecialNewpages.php
+--- mediawiki-1.23.4/includes/specials/SpecialNewpages.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialNewpages.php	2014-10-11 09:37:55.608820136 +0200
+@@ -305,6 +305,12 @@
+ 	 */
+ 	public function formatRow( $result ) {
+ 		$title = Title::newFromRow( $result );
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		if (!$title->userCanReadEx()) {
++			return "";
++		}
++		/*op-patch|TS|2009-06-19|end*/
+ 
+ 		# Revision deletion works on revisions, so we should cast one
+ 		$row = array(
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialPrefixindex.php m23.4/includes/specials/SpecialPrefixindex.php
+--- mediawiki-1.23.4/includes/specials/SpecialPrefixindex.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialPrefixindex.php	2014-10-11 09:37:55.612820144 +0200
+@@ -212,6 +212,12 @@
+ 				$prefixLength = strlen( $prefix );
+ 				while ( ( $n < $this->maxPerPage ) && ( $s = $res->fetchObject() ) ) {
+ 					$t = Title::makeTitle( $s->page_namespace, $s->page_title );
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++					if ($t && !$t->userCanReadEx()) {
++						continue; 
++					}
++/*op-patch|TS|2009-06-19|end*/  
+ 					if ( $t ) {
+ 						$displayed = $t->getText();
+ 						// Try not to generate unclickable links
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialProtectedpages.php m23.4/includes/specials/SpecialProtectedpages.php
+--- mediawiki-1.23.4/includes/specials/SpecialProtectedpages.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialProtectedpages.php	2014-10-11 09:37:55.608820136 +0200
+@@ -387,6 +387,12 @@
+ 
+ 			case 'pr_page':
+ 				$title = Title::makeTitleSafe( $row->page_namespace, $row->page_title );
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		if (!$title->userCanReadEx()) {
++			return "";
++		}
++		/*op-patch|TS|2009-06-19|end*/
+ 				if ( !$title ) {
+ 					$formatted = Html::element(
+ 						'span',
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialProtectedtitles.php m23.4/includes/specials/SpecialProtectedtitles.php
+--- mediawiki-1.23.4/includes/specials/SpecialProtectedtitles.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialProtectedtitles.php	2014-10-11 09:37:55.388819026 +0200
+@@ -98,6 +98,12 @@
+ 				)
+ 			) . "\n";
+ 		}
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		if (!$title->userCanReadEx()) {
++			return "";
++		}
++		/*op-patch|TS|2009-06-19|end*/
+ 
+ 		$link = Linker::link( $title );
+ 		$description_items = array();
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialRandompage.php m23.4/includes/specials/SpecialRandompage.php
+--- mediawiki-1.23.4/includes/specials/SpecialRandompage.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialRandompage.php	2014-10-11 09:37:55.600820083 +0200
+@@ -61,7 +61,12 @@
+ 		}
+ 
+ 		$title = $this->getRandomTitle();
+-
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		if (!$title->userCanReadEx()) {
++			$title = NULL;
++		}
++		/*op-patch|TS|2009-06-19|end*/
+ 		if ( is_null( $title ) ) {
+ 			$this->setHeaders();
+ 			// Message: randompage-nopages, randomredirect-nopages
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialRecentchanges.php m23.4/includes/specials/SpecialRecentchanges.php
+--- mediawiki-1.23.4/includes/specials/SpecialRecentchanges.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialRecentchanges.php	2014-10-11 09:37:55.440819292 +0200
+@@ -301,6 +301,13 @@
+ 
+ 		$rclistOutput = $list->beginRecentChangesList();
+ 		foreach ( $rows as $obj ) {
++			/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++			// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++				$rc = RecentChange::newFromRow( $obj );
++				if (!$rc->getTitle()->userCanReadEx()) {
++					continue;
++				}
++			/*op-patch|TS|2009-06-19|end*/ 
+ 			if ( $limit == 0 ) {
+ 				break;
+ 			}
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialSearch.php m23.4/includes/specials/SpecialSearch.php
+--- mediawiki-1.23.4/includes/specials/SpecialSearch.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialSearch.php	2014-10-11 09:37:55.476819475 +0200
+@@ -534,7 +534,28 @@
+ 		$out = "<ul class='mw-search-results'>\n";
+ 		$result = $matches->next();
+ 		while ( $result ) {
+-			$out .= $this->showHit( $result, $terms );
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++			if (($result->getTitle() != NULL) && ($result->getTitle()->userCanReadEx())) {
++				global $haclgProtectProperties;
++				if (!$haclgProtectProperties || !defined('SMW_VERSION')) {
++					// Properties are not protected.
++					$out .= $this->showHit( $result, $terms );
++				} else {
++					$res0 = $this->showHit( $result, $terms );
++					$res1 = str_replace("'", "", $res0);
++					if ( !strpos($res1, "::<span class=searchmatch>") ) {
++						$regexpattern = '/::[^\]]*/';
++						$regexreplace = '::Property value protected by HaloACL';
++						$res2 = preg_replace($regexpattern, $regexreplace, $res1);
++						$out .= $res2;
++					} else {
++						$out .= '<p>Search result deleted by HaloACL</p>';
++					}
++
++				}
++			}
++/*op-patch|TS|2009-06-19|end*/  
+ 			$result = $matches->next();
+ 		}
+ 		$out .= "</ul>\n";
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialWatchlist.php m23.4/includes/specials/SpecialWatchlist.php
+--- mediawiki-1.23.4/includes/specials/SpecialWatchlist.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialWatchlist.php	2014-10-11 09:37:55.476819475 +0200
+@@ -337,6 +337,12 @@
+ 		foreach ( $rows as $obj ) {
+ 			# Make RC entry
+ 			$rc = RecentChange::newFromRow( $obj );
++			/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++			// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++			if (!$rc->getTitle()->userCanReadEx()) {
++				continue;
++			}
++			/*op-patch|TS|2009-06-19|end*/
+ 			$rc->counter = $counter++;
+ 
+ 			if ( $wgShowUpdatedMarker ) {
+diff -u -r -N mediawiki-1.23.4/includes/specials/SpecialWhatlinkshere.php m23.4/includes/specials/SpecialWhatlinkshere.php
+--- mediawiki-1.23.4/includes/specials/SpecialWhatlinkshere.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/specials/SpecialWhatlinkshere.php	2014-10-11 09:37:55.592820059 +0200
+@@ -263,6 +263,12 @@
+ 		$out->addHTML( $this->listStart( $level ) );
+ 		foreach ( $rows as $row ) {
+ 			$nt = Title::makeTitle( $row->page_namespace, $row->page_title );
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++			if (!$nt->userCanReadEx()) {
++				continue;
++			}
++/*op-patch|TS|2009-06-19|end*/  
+ 
+ 			if ( $row->rd_from && $level < 2 ) {
+ 				$out->addHTML( $this->listItem( $row, $nt, true ) );
+diff -u -r -N mediawiki-1.23.4/includes/Title.php m23.4/includes/Title.php
+--- mediawiki-1.23.4/includes/Title.php	2014-09-24 21:55:15.000000000 +0200
++++ m23.4/includes/Title.php	2014-10-11 09:37:53.700810660 +0200
+@@ -152,9 +152,15 @@
+ 	public static function newFromDBkey( $key ) {
+ 		$t = new Title();
+ 		$t->mDbkeyform = $key;
+-		if ( $t->secureAndSplit() ) {
+-			return $t;
+-		} else {
++		if( $t->secureAndSplit() ) {
++		/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++		// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++					return $t->checkAccessControl();
++		}
++		/*op-patch|TS|2009-06-19|end*/  
++		//Replaced by patch		return $t;
++		
++		else {
+ 			return null;
+ 		}
+ 	}
+@@ -216,7 +222,11 @@
+ 			if ( $defaultNamespace == NS_MAIN ) {
+ 				$cache->set( $text, $t );
+ 			}
+-			return $t;
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++			return $t->checkAccessControl();
++/*op-patch|TS|2009-06-19|end*/  
++// Preplaced by patch			return $t;
+ 		} else {
+ 			$ret = null;
+ 			return $ret;
+@@ -250,7 +260,11 @@
+ 
+ 		$t->mDbkeyform = str_replace( ' ', '_', $url );
+ 		if ( $t->secureAndSplit() ) {
+-			return $t;
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++			return $t->checkAccessControl();
++/*op-patch|TS|2009-06-19|end*/  
++// Preplaced by patch			return $t;
+ 		} else {
+ 			return null;
+ 		}
+@@ -405,7 +419,12 @@
+ 		$t->mUrlform = wfUrlencode( $t->mDbkeyform );
+ 		$t->mTextform = str_replace( '_', ' ', $title );
+ 		$t->mContentModel = false; # initialized lazily in getContentModel()
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++		$t = $t->checkAccessControl();
+ 		return $t;
++/*op-patch|TS|2009-06-19|end*/  
++// Preplaced by patch		return $t;
+ 	}
+ 
+ 	/**
+@@ -427,7 +446,11 @@
+ 		$t = new Title();
+ 		$t->mDbkeyform = Title::makeName( $ns, $title, $fragment, $interwiki );
+ 		if ( $t->secureAndSplit() ) {
+-			return $t;
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++			return $t->checkAccessControl();
++/*op-patch|TS|2009-06-19|end*/  
++// Preplaced by patch			return $t;
+ 		} else {
+ 			return null;
+ 		}
+@@ -1113,6 +1136,24 @@
+ 		wfRunHooks( 'TitleIsMovable', array( $this, &$result ) );
+ 		return $result;
+ 	}
++	
++	/*op-patch|TS|2012-02-24|HaloACL|HaloACLMemcache|start*/
++	// See http://dmwiki.ontoprise.com/index.php/HaloACLMemcache
++	public function userCanRead() {
++		if (!defined('HACL_HALOACL_VERSION')) {
++			//HaloACL is disabled
++			return $this->userCanReadOrig();
++		}
++		
++		global $wgUser;
++		$hmc = HACLMemcache::getInstance();
++		$allowed = $hmc->retrievePermission($wgUser, $this, 'read');
++		if ($allowed === -1) {
++			$allowed = $this->userCanReadOrig();
++			$hmc->storePermission($wgUser, $this, 'read', $allowed);
++		}
++		return $allowed;
++	}
+ 
+ 	/**
+ 	 * Is this the mainpage?
+@@ -1458,6 +1499,25 @@
+ 		return implode( '/', $parts );
+ 	}
+ 
++/*op-patch|TS|2012-02-24|HaloACL|HaloACLMemcache|start*/
++// See http://dmwiki.ontoprise.com/index.php/HaloACLMemcache
++
++public function userCan($action, $doExpensiveQueries = true) {
++	if (!defined('HACL_HALOACL_VERSION')) {
++		//HaloACL is disabled
++		return $this->userCanOrig($action, $doExpensiveQueries);
++	}
++
++	global $wgUser;
++	$hmc = HACLMemcache::getInstance();
++	$allowed = $hmc->retrievePermission($wgUser, $this, $action);
++	if ($allowed === -1) {
++		$allowed = $this->userCanOrig($action, $doExpensiveQueries);
++		$hmc->storePermission($wgUser, $this, $action, $allowed);
++	}
++	return $allowed;
++}
++
+ 	/**
+ 	 * Get the base page name title, i.e. the part before the subpage name
+ 	 *
+@@ -1859,7 +1919,7 @@
+ 	 * @deprecated in 1.19; use userCan(), quickUserCan() or getUserPermissionsErrors() instead
+ 	 * @return Bool
+ 	 */
+-	public function userCanRead() {
++	public function userCanReadOrig() {
+ 		wfDeprecated( __METHOD__, '1.19' );
+ 		return $this->userCan( 'read' );
+ 	}
+@@ -1893,7 +1953,7 @@
+ 	 *   unnecessary queries.
+ 	 * @return Bool
+ 	 */
+-	public function userCan( $action, $user = null, $doExpensiveQueries = true ) {
++	public function userCanOrig( $action, $user = null, $doExpensiveQueries = true ) {
+ 		if ( !$user instanceof User ) {
+ 			global $wgUser;
+ 			$user = $wgUser;
+@@ -2336,7 +2396,7 @@
+ 				# If it's a special page, ditch the subpage bit and check again
+ 				$name = $this->getDBkey();
+ 				list( $name, /* $subpage */ ) = SpecialPageFactory::resolveAlias( $name );
+-				if ( $name ) {
++				if ( !is_null($name) ) { 
+ 					$pure = SpecialPage::getTitleFor( $name )->getPrefixedText();
+ 					if ( in_array( $pure, $wgWhitelistRead, true ) ) {
+ 						$whitelisted = true;
+@@ -2355,8 +2415,11 @@
+ 				}
+ 			}
+ 		}
++		
++		wfRunHooks( 'userCan', array( &$this, &$user, $action, &$whitelisted )  );
+ 
+ 		if ( !$whitelisted ) {
++			
+ 			# If the title is not whitelisted, give extensions a chance to do so...
+ 			wfRunHooks( 'TitleReadWhitelist', array( $this, $user, &$whitelisted ) );
+ 			if ( !$whitelisted ) {
+@@ -4502,6 +4565,99 @@
+ 	public function exists() {
+ 		return $this->getArticleID() != 0;
+ 	}
++/*op-patch|TS|2009-06-19|HaloACL|SafeTitle|start*/
++// See http://dmwiki.ontoprise.com:8888/dmwiki/index.php/SafeTitle
++	
++	/**
++	 * This function is called from the patches for HaloACL for secure listings 
++	 * (e.g. Spcecial:AllPages). It checks, whether the current user is allowed
++	 * to read the article for this title object. For normal pages this is 
++	 * evaluate in the method <userCanRead>. 
++	 * However, the special pages that generate listings, often create title 
++	 * objects before the can check their accessibility. The fallback mechanism
++	 * of HaloACL creates the title "Permission denied" for the article that 
++	 * must not be accessed. The listings would then show a link to "Permission
++	 * denied". So this function returns "false" for the title "Permission denied"
++	 * as well. 
++	 *
++	 * @return 
++	 * 		true, if this title can be read
++	 * 		false, if the title is protected or "Permission denied".
++	 */
++	public function userCanReadEx() {
++		if (!defined('HACL_HALOACL_VERSION')) {
++			//HaloACL is disabled
++			return true;
++		}
++		global $haclgContLang;
++		return $this->mTextform !== $haclgContLang->getPermissionDeniedPage() 
++		       && $this->userCanRead();
++	}
++	
++	/**
++	 * This function checks, if this title is accessible for the action of the
++	 * current request. If the action is unknown it is assumed to be "read".
++	 * If the title is not accessible, the new title "Permission denied" is 
++	 * returned. This is a fallback to protect titles if all other security 
++	 * patches fail.
++	 * 
++	 * While a page is rendered, the same title is often checked several times. 
++	 * To speed things up, the results of an accessibility check are internally
++	 * cached.  
++	 * 
++	 * This function can be disabled in HACL_Initialize.php or LocalSettings.php
++	 * by setting the variable $haclgEnableTitleCheck = false.
++	 *
++	 * @return 
++	 * 		$this, if access is granted on this title or
++	 * 		the title for "Permission denied" if not.
++	 */
++	private function checkAccessControl() {
++		if (!defined('HACL_HALOACL_VERSION')) {
++			//HaloACL is disabled
++			return $this;
++		}
++		global $haclgEnableTitleCheck;
++		if (isset($haclgEnableTitleCheck) && $haclgEnableTitleCheck === false) {
++			return $this;  
++		}
++		
++		static $permissionCache = array();
++		
++		global $wgRequest;
++		$action = $wgRequest->getVal( 'action', 'read');
++		$currentTitle = $wgRequest->getVal('title');
++		$currentTitle = str_replace( '_', ' ', $currentTitle);
++		if ($this->getFullText() != $currentTitle) {
++			$action = 'read';
++		}
++		$index = $this->getFullText().'-'.$action; // A bug was fixed here thanks to Dave MacDonald
++		$allowed = @$permissionCache[$index];
++		if (!isset($allowed)) {
++			switch ($action) {
++				case 'create':
++				case 'edit':
++				case 'move':
++				case 'annotate':
++					$allowed = $this->userCan($action);
++					break;
++				default:
++					$allowed = $this->userCanRead();
++			}
++			$permissionCache[$index] = $allowed;
++		}
++		if ($allowed === false) {
++			global $haclgContLang;
++			$etc = $haclgEnableTitleCheck;
++			$haclgEnableTitleCheck = false;
++			$t = Title::newFromURL($haclgContLang->getPermissionDeniedPage());
++			$haclgEnableTitleCheck = $etc;
++			return $t;
++		}
++		return $this;
++	}
++/*op-patch|TS|2009-06-19|end*/  
++
+ 
+ 	/**
+ 	 * Should links to this title be shown as potentially viewable (i.e. as
