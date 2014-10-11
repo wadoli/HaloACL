@@ -1,0 +1,125 @@
+diff -u -r -N SemanticMediaWiki_orig/includes/src/InTextAnnotationParser.php SemanticMediaWiki_new/includes/src/InTextAnnotationParser.php
+--- SemanticMediaWiki_orig/includes/src/InTextAnnotationParser.php
++++ SemanticMediaWiki_new/includes/src/InTextAnnotationParser.php
+@@ -291,7 +291,9 @@
+ 
+ 		// Return the text representation
+ 		$result = $dataValue->getShortWikitext( true );
+-
++/*op-patch|TS|2014-09-30|HaloACL|Semantic protection|start*/
++		wfRunHooks('PropertyBeforeOutput', array(&$dataValue, &$result));
++/*op-patch|TS|2014-09-30|end*/
+ 		// If necessary add an error text
+ 		if ( ( $this->settings->get( 'smwgInlineErrors' ) &&
+ 			$this->isEnabledNamespace && $this->isAnnotation ) &&
+diff -u -r -N SemanticMediaWiki_orig/includes/storage/SMW_QueryResult.php SemanticMediaWiki_new/includes/storage/SMW_QueryResult.php
+--- SemanticMediaWiki_orig/includes/storage/SMW_QueryResult.php
++++ SemanticMediaWiki_new/includes/storage/SMW_QueryResult.php
+@@ -80,6 +80,38 @@
+ 		$this->mStore = $store;
+ 	}
+ 
++	/*op-patch|TS|2014-09-30|HaloACL|Semantic protection|start*/
++	/**
++	 * Creates a new query result based on $this query result. Everything
++	 * but the content of $this query result is copied into the new one.
++	 * This is useful for query result filters which copy the content only partly.
++	 *
++	 * @param SMWQueryResult $this
++	 * 		The following parts of this query result are copied into the new q.r.:
++	 * 		- print requests
++	 * 		- query, querystring
++	 * 	 	- furtherres
++	 * 	 	- extra printouts
++	 * @param array
++	 * 		An array of results e.g. the set of filtered results of the original query.
++	 * 		If the new q.r. should have no results then pass an empty array.
++	 *
++	 * @return SMWQueryResult
++	 * 		A partly copied $queryResult
++	 */
++	public function newFromQueryResult($results) {
++		$classname = get_class($this);
++
++		$qr = new $classname($this->mPrintRequests,
++							 $this->mQuery,
++							 $results,
++							 $this->mStore,
++							 $this->mFurtherResults);
++
++		return $qr;
++	}
++	/*op-patch|TS|2014-09-30|end*/
++	
+ 	/**
+ 	 * Get the SMWStore object that this result is based on.
+ 	 *
+diff -u -r -N SemanticMediaWiki_orig/includes/storage/SMW_ResultArray.php SemanticMediaWiki_new/includes/storage/SMW_ResultArray.php
+--- SemanticMediaWiki_orig/includes/storage/SMW_ResultArray.php
++++ SemanticMediaWiki_new/includes/storage/SMW_ResultArray.php
+@@ -46,7 +46,11 @@
+ 	public function __construct( SMWDIWikiPage $resultPage, SMWPrintRequest $printRequest, SMWStore $store ) {
+ 		$this->mResult = $resultPage;
+ 		$this->mPrintRequest = $printRequest;
+-		$this->mStore = $store;
++/*op-patch|TS|2014-09-30|HaloACL|Semantic protection|start*/
++		//		$this->mStore = $store;
++		$this->mStore = smwfGetStore();
++/*op-patch|TS|2014-09-30|end*/
++		
+ 		$this->mContent = false;
+ 	}
+ 
+diff -u -r -N SemanticMediaWiki_orig/includes/storage/SQLStore/SMW_SQLStore3_Queries.php SemanticMediaWiki_new/includes/storage/SQLStore/SMW_SQLStore3_Queries.php
+--- SemanticMediaWiki_orig/includes/storage/SQLStore/SMW_SQLStore3_Queries.php
++++ SemanticMediaWiki_new/includes/storage/SQLStore/SMW_SQLStore3_Queries.php
+@@ -654,7 +654,25 @@
+ 						// No defaultnamespaces here; If any, these are already in the concept.
+ 						// Unescaping is the same as in SMW_DV_Conept's getWikiValue().
+ 						$desc = $qp->getQueryDescription( str_replace( array( '&lt;', '&gt;', '&amp;' ), array( '<', '>', '&' ), $row->concept_txt ) );
++/*op-patch|TS|2010-07-14|HaloACL|Semantic protection|start*/
++						global $haclgProtectProperties;
++						if (isset($haclgProtectProperties) && $haclgProtectProperties) {
++							$query = new SMWQuery($desc);
++							wfRunHooks('RewriteQuery', array(&$query, &$queryEmpty) );
++							$errors = $query->getErrors();
++							if (!empty($errors)) {
++								$this->m_errors += $errors;
++							}
++							if ($queryEmpty) {
++								$qid = -1;
++							} else {
++								$desc = $query->getDescription();
++								$qid = $this->compileQueries( $desc );
++							}
++						} else {
+ 						$qid = $this->compileQueries( $desc );
++						}
++/*op-patch|TS|2010-07-14|end*/
+ 						if ($qid != -1) {
+ 							$query = $this->m_queries[$qid];
+ 						} else { // somehow the concept query is no longer valid; maybe some syntax changed (upgrade) or global settings were modified since storing it
+diff -u -r -N SemanticMediaWiki_orig/includes/storage/StoreFactory.php SemanticMediaWiki_new/includes/storage/StoreFactory.php
+--- SemanticMediaWiki_orig/includes/storage/StoreFactory.php
++++ SemanticMediaWiki_new/includes/storage/StoreFactory.php
+@@ -38,11 +38,20 @@
+ 		if ( self::$defaultStore === null ) {
+ 			self::$defaultStore = self::getConfiguration()->get( 'smwgDefaultStore' );
+ 		}
++		
++		global $smwgMasterStore;
++		if ( !empty( $smwgMasterStore) && ( get_class( $smwgMasterStore ) == "HACLSMWStore" ) ) {
++				return $smwgMasterStore;
++		}				
+ 
+ 		if ( $store === null ) {
+ 			$store = self::$defaultStore;
+ 		}
+ 
++		if ( empty( $smwgMasterStore ) ) {
++			$smwgMasterStore = new $store;
++		}			
++
+ 		if ( !isset( self::$instance[ $store ] ) ) {
+ 			self::$instance[ $store ] = self::newInstance( $store );
+ 			self::$instance[ $store ]->setConfiguration( self::getConfiguration() );

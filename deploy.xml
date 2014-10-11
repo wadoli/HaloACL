@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploydescriptor>
+	<global>
+		<id>haloacl</id>
+		<title>Access Control List extension</title>
+		<version>1.8.0</version>
+		<patchlevel>0</patchlevel>
+		<vendor>ontoprise GmbH</vendor>
+		<maintainer>ontoprise GmbH</maintainer>
+		<license>GPL-v2</license>
+		<instdir>extensions/HaloACL</instdir>
+		<description>
+			The Access Control List extension provides powerful access control for protecting single wiki pages, articles in categories or namespaces and values of semantic properties. Access can be restricted via a Graphical User Interface for individual users, entire user groups, groups of groups etc. Access rights can also be granted dynamically, i.e. for the duration of certain project.
+		</description>
+		<helpurl>http://smwplus.net/index.php/Help:Access_Control_List_extension</helpurl>
+		<dependencies>
+			<dependency from="1.22.10" to="1.23.4">mw</dependency>
+		</dependencies>
+	</global>
+	
+	<codefiles>
+		<file loc="deploy.xml" />
+	</codefiles>
+
+	<wikidumps>
+		<file loc="ontologyBundle/dump.xml"/>
+	</wikidumps>
+
+	<resources>
+		<!-- empty -->
+	</resources>
+
+	<configs>
+		<precedes ext="smw" />
+
+		<patch file="patch_for_MW_1.22.10.txt" ext="mw" from="12210" to="12210"/>
+		<new>
+			<require name="smwhalo"
+				file="extensions/HaloACL/includes/HACL_Initialize.php" />
+			<php name="MasterTemplate">
+			// Remove the comments from the following line to enable the ACL master template
+			// for private user spaces. Every new article of a user will only be accessible
+			// by himself until the access rights are changed.
+			//$haclgNewUserTemplate = "ACL:Template/NewUserTemplate";
+			</php>				
+			<function name="enableHaloACL">
+			</function>
+			<script file="maintenance/HACL_Setup.php" />
+			<script file="maintenance/HACL_Setup.php"
+				params="--initDefaults" />
+		</new>
+		<uninstall>
+			<script file="maintenance/HACL_Setup.php"
+				params="--delete" />
+		</uninstall>
+	</configs>
+</deploydescriptor>

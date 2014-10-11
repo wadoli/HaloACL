@@ -1,0 +1,76 @@
+Installation instructions for Access_Control_List extension v1.8.0
+----------------------------------------------------
+    
+Requirements HaloACL 
+=================================
+
+    MediaWiki 1.22
+    'Patch for Linux' - http://en.wikipedia.org/wiki/Patch_(Unix)
+    
+Installation:
+=============
+
+
+(1) Download and extract the HaloACL ZIP archive.
+(2) Copy the folder 'HaloACL' into the extensions folder of MediaWiki.
+(3) Activate the HaloACL and memcache by adding the following lines to LocalSettings.php:
+	include_once('extensions/HaloACL/includes/HACL_Initialize.php');
+	enableHaloACL(); 
+	## Shared memory settings (check if this is already set somewhere else in LocalSettings)
+	$wgMainCacheType = CACHE_MEMCACHED;
+	$wgMemCachedServers = array('localhost:11211');
+	
+(4) Open a command prompt
+(5) Go to the base directory of your MediaWiki
+(6) Choose the command depending on your MediaWiki installation to patch MediaWiki:
+			
+			cp extensions/HaloACL/<patchfile_for_MW> .
+			patch < <patchfile_for_MW>
+
+(7) If you are running SemanticMediaWiki, go to you SemanticMediaWikis directory
+			
+			cp ../HaloACL/patch_for_SMW2.0 .
+			patch < patch_for_SMW2.0
+
+Updating the database
+---------------------
+
+The HaloACL extension requires some additional tables in the database that must
+be added to the existing database schema. Existing data will not be modified.
+Therefore change into the maintenance folder of the HaloACL extension and run the
+setup script:
+ cd /folder_to_mediawiki/extension/HaloACL/maintenance
+ php HACL_Setup.php
+ 
+Creating default groups with default rights
+-------------------------------------------
+ 
+After the database is updated you can, IF YOU WANT, create some default groups 
+with default permissions:
+ 
+Group                | Default permissions
+---------------------------------------------
+Knowledge consumer   | read
+Knowledge provider   | read, edit, upload
+Knowledge architect  | read, edit, manage, upload
+sysop                | read, edit, manage, upload, administrate, technical
+bureaucrat           | read, edit, manage, upload, administrate, technical
+
+The user "WikiSysop" is the default member of these groups.
+
+To create these defaults you have to execute the following on the command line:
+ cd /folder_to_mediawiki/extension/HaloACL/maintenance
+ php HACL_Setup.php --initDefaults
+ 
+
+Testing your Installation 
+=========================
+
+Go to the Special:Version page and you should see HaloACL (Version nn) listed under Other. 
+Go to the Special:HaloACL to start defining access control lists.
+
+Options:
+========
+
+All configuration options are defined and described in HACL_Initialize.php.
+
