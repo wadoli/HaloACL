@@ -4,7 +4,7 @@ Do you like collaborating? Probably, because otherwise you would not manage a Wi
 
 Perhaps your vision is to unleash crowd wisdom and let everybody contribute boundlessly. Or you want to assemble an exclusive circle that works together on arts projects. Or you would like to support employees with sharing knowledge and need well-arranged structures for this.
 
-Never mind what contribution policy you want to follow: The "ACL" puts in your hands the capability of controlling MediaWikis editing possibilities via a simple graphical user interface. Define hierarchic user groups, assign freely combinations of over 50 permission objects (e.g. reading, editing, protecting, editinterface etc.) and be even able to build your own groups of these permissions - thanks to the Access Control List extension.
+Never mind what contribution policy you want to follow: The ACL puts in your hands the capability of controlling MediaWikis editing possibilities via a simple graphical user interface. Define hierarchic user groups, assign freely combinations of over 50 permission objects (e.g. reading, editing, protecting, editinterface etc.) and be even able to build your own groups of these permissions - thanks to the Access Control List extension.
 
 **Enjoy the Access Control List extension features:**
 
@@ -37,21 +37,21 @@ This articles guides you through installation and other administrative work
 4. Copy the folders 'HaloACL', 'ScriptManager' and 'ARCLibrary' into the extensions folder of MediaWiki.
 5. Activate the HaloACL by adding the following lines to LocalSettings.php:
 
-		```PHP
+	```PHP
 include_once('extensions/HaloACL/includes/HACL_Initialize.php');
 	enableHaloACL(); 
 $wgMainCacheType = CACHE_MEMCACHED;
 $wgMemCachedServers = array('localhost:11211');
 ```
 
-		**Note:**
-		If you already have custom namespaces on your site, insert `$haclgNamespaceIndex = ???;` into your LocalSettings.php **before** the call of HACL_Initialize.php. The number ??? must be the smallest even namespace number that is not in use yet. However, it must not be smaller than 100.
+	**Note:**
+	If you already have custom namespaces on your site, insert `$haclgNamespaceIndex = ???;` into your LocalSettings.php **before** the call of HACL_Initialize.php. The number ??? must be the smallest even namespace number that is not in use yet. However, it must not be smaller than 100.
 
 6. Open a command prompt
 7. Go to the base directory of your MediaWiki
 8. Choose the command depending on your MediaWiki installation to patch MediaWiki:
 
-		```Shell
+	```Shell
 cp extensions/HaloACL/<patchfile_for_MW> .
 patch < <patchfile_for_MW>
 or
@@ -62,7 +62,7 @@ php patch.php -d <mediawiki-dir> -p patch_for_MW_1.17.0.txt
 10. Execute the following command to patch Semantic Forms (skip this step if you don't have the Semantic Forms extension installed), e. g. `php patch.php -d <mediawiki-dir> -p patch_for_SF_2.1.2.txt`
 11. Update the database: The HaloACL extension requires some additional tables in the database that must be added to the existing database schema. Existing data will not be modified. Therefore change into the maintenance folder of the HaloACL extension and run the setup script:
 
-		```Shell
+	```Shell
 cd /folder_to_mediawiki/extension/HaloACL/maintenance
 php HACL_Setup.php
 ```
@@ -164,18 +164,19 @@ Fatal error: Call to undefined method SMWPropertyValue::userCan() in `/var/www/w
 
 This problem occurs if HaloACL protects properties and SMW is not patched. There are two solutions for your problem (with HaloACL enabled):
 
-**1.** In HACL_Initialize.php, set
+1. In HACL_Initialize.php, set
 
+	```PHP
+$haclgProtectProperties=false;
+```	
 
-	$haclgProtectProperties=false;
+	In this case, properties are not protected, or
 
-In this case, properties are not protected, or
+2. Apply the patch in patch_for_SMW_1.4.2.txt to SMW. This is the recommended solution.
 
-**2.** Apply the patch in patch_for_SMW_1.4.2.txt to SMW. This is the recommended solution.
+	**Note:**
 
-**Note:**
-
-If you are using SMW 1.4.3 you have to look for **patch_for_SMW_1.4.3.txt**, located at **..extensionsHaloACL**
+	If you are using SMW 1.4.3 you have to look for **patch_for_SMW_1.4.3.txt**, located at **..extensionsHaloACL**
 
 
 #### Database query syntax error Special:Form ####
@@ -232,6 +233,7 @@ All configuration options are defined and described in ../HaloACLincludes/HACL_I
 #### Security exception during SMW refresh ####
 
 The SMW's refresh script is executed as anonymous user. It tries to access all pages including those for which it does not have access rights. So HaloACL actually behaves correctly. warning.pngCould not connect to Web Service. Please check your Wiki Web Service Definition.
+
 
 #### Workaround ####
 
