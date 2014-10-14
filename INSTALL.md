@@ -126,9 +126,12 @@ Currently, the only supported languages are English, German and French.
 #### Changing language ####
 1. **Open the LocalSettings.php**
 2. **Change the value of `$wgLanguageCode` to your desired language**
-For German enter ‘`de`’
-For English enter ‘`en`’
-For French enter ‘`fr`’
+
+	For German enter ‘`de`’
+
+	For English enter ‘`en`’
+
+	For French enter ‘`fr`’
 
 	**Note:**
 
