@@ -60,7 +60,7 @@ Compatibility information
 
         ```php patch.php -d <mediawiki-dir> -p patch_for_MW_1.17.0.txt```
 
-9. Choose the command depending on your Semantic MediaWiki installation to patch SMW (skip this step if you don't have SMW installed):
+* Choose the command depending on your Semantic MediaWiki installation to patch SMW (skip this step if you don't have SMW installed):
     - SMW 1.5.0
 
         ```php patch.php -d <mediawiki-dir> -p patch_for_SMW_1.5.0.txt```
@@ -81,7 +81,7 @@ Compatibility information
 
         ```php patch.php -d <mediawiki-dir> -p patch_for_SMW_1.7.1.txt```
 
-10. Execute the following command to patch Semantic Forms (skip this step if you don't have the Semantic Forms extension installed):
+* Execute the following command to patch Semantic Forms (skip this step if you don't have the Semantic Forms extension installed):
     - Semantic Forms 1.9
 
         ```php patch.php -d <mediawiki-dir> -p patch_for_SF_1.9.txt```
@@ -102,7 +102,7 @@ Compatibility information
 
         ```php patch.php -d <mediawiki-dir> -p patch_for_SF_2.1.2.txt```
 
-11. Update the database:
+* Update the database:
 
     The HaloACL extension requires some additional tables in the database that must be added to the existing database schema. Existing data will not be modified. Therefore change into the maintenance folder of the HaloACL extension and run the setup script:
 
@@ -112,28 +112,29 @@ Compatibility information
 ```
 
 ## Notes on patches
+
 ### Notes on patches for Mediawiki
 
 This patch adds semantic protection of properties and their values and filters links to protected pages from several special pages. On other pages these links are replaced by a link to the page "Permission denied". This patch is optional.
 
-```patch_for_MW_<version>.txt```
+```patch_for_MW_<version>.txt ```
 
 ### Notes on patches for Semantic Mediawiki
 
 This patch adds semantic protection of properties and their values. This patch is recommended.
 
-```patch_for_SMW_<version>.txt```
+```patch_for_SMW_<version>.txt ```
 
 ### Notes on patches for SemanticForms
 
 This patch checks if pages can be edited with Semantic Forms.
 
-```patch_for_SF_<version>.txt```
+```patch_for_SF_<version>.txt ```
 
 This patch for Semantic Forms is mandatory, if you want to protect the values of semantic properties in semantic forms and if you want to use the HaloACL toolbar in forms.
 Information.png  
 
-** Note: **The patch files were created in Eclipse. They can be installed using the tool patch.php from the deploy framework (smwhalo-deploy-1.0) which itself uses GNU patch. The patch.php is also included in this extension. Go into the root directory of the extension and run the following command: ```php patch.php -p <patch-file> -d <mediawiki-dir> --onlypatch```
+** Note: ** The patch files were created in Eclipse. They can be installed using the tool patch.php from the deploy framework (smwhalo-deploy-1.0) which itself uses GNU patch. The patch.php is also included in this extension. Go into the root directory of the extension and run the following command: ```php patch.php -p <patch-file> -d <mediawiki-dir> --onlypatch```
 
 ## Creating default groups with default rights
 
