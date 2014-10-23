@@ -14,9 +14,9 @@ Compatibility information
 
 ## How to install manually
 
-* Include the path to ** php.bin ** to the system variable PATH (either Windows or Linux), e.g. ```C:\xampp\php;```
+* Include the path to **php.bin** to the system variable PATH (either Windows or Linux), e.g. ```C:\xampp\php;```
 
-* Extract the 'haloacl-1.7.0_0_including_dependencies.zip' archive (for an installation on top of SMW+)
+* Extract the 'haloacl-1.7.0\_0\_including\_dependencies.zip' archive (for an installation on top of SMW+)
 
 * Extract the 'haloacl-1.7.0_0.zip' archive (for an installation on top of MediaWiki)
 
@@ -29,7 +29,7 @@ Compatibility information
     include_once('extensions/HaloACL/includes/HACL_Initialize.php');
     enableHaloACL(); 
 ```
-+ ** Note: ** If you already have custom namespaces on your site, insert ```$haclgNamespaceIndex = ???;``` into your LocalSettings.php **before** the call of HACL_Initialize.php. The number ??? must be the smallest even namespace number that is not in use yet. However, it must not be smaller than 100.    
++ **Note:** If you already have custom namespaces on your site, insert ```$haclgNamespaceIndex = ???;``` into your LocalSettings.php **before** the call of HACL_Initialize.php. The number ??? must be the smallest even namespace number that is not in use yet. However, it must not be smaller than 100.    
 
 * Open a commandline interface
 
@@ -134,7 +134,7 @@ This patch checks if pages can be edited with Semantic Forms.
 This patch for Semantic Forms is mandatory, if you want to protect the values of semantic properties in semantic forms and if you want to use the HaloACL toolbar in forms.
 Information.png  
 
-** Note: ** The patch files were created in Eclipse. They can be installed using the tool patch.php from the deploy framework (smwhalo-deploy-1.0) which itself uses GNU patch. The patch.php is also included in this extension. Go into the root directory of the extension and run the following command: ```php patch.php -p <patch-file> -d <mediawiki-dir> --onlypatch```
+**Note:** The patch files were created in Eclipse. They can be installed using the tool patch.php from the deploy framework (smwhalo-deploy-1.0) which itself uses GNU patch. The patch.php is also included in this extension. Go into the root directory of the extension and run the following command: ```php patch.php -p <patch-file> -d <mediawiki-dir> --onlypatch```
 
 ## Creating default groups with default rights
 
@@ -151,12 +151,12 @@ After the database is updated you can, if you want, create some default groups w
 
 The user "WikiSysop" is the default member of these groups.
 
-** To create these defaults you have to execute the following on the command line: **
+**To create these defaults you have to execute the following on the command line:**
 ```
 cd /folder_to_mediawiki/extension/HaloACL/maintenance
 php HACL_Setup.php --initDefaults
 ```
-** Note: ** This step is only necessary if you have installed the extension manually; executing the installation with the wiki Administration Tool, will add these groups and permissions automatically.
+**Note:** This step is only necessary if you have installed the extension manually; executing the installation with the wiki Administration Tool, will add these groups and permissions automatically.
 
 ## Language support
 
@@ -170,7 +170,7 @@ Currently, the only supported languages are English, German and French.
     + For English enter 'en'
     + For French enter 'fr'
 
-** Note: ** The label of the special pages change according to the selected language. In this case you'll find the special page to HaloACL under "Spezial:HaloACL" when using German, "Spécial:HaloACL" when using French. However, the page will be in english.
+**Note:** The label of the special pages change according to the selected language. In this case you'll find the special page to HaloACL under "Spezial:HaloACL" when using German, "Spécial:HaloACL" when using French. However, the page will be in english.
 
 Because of those 'Translations' and some more static translations of this kind it is not recommended to switch the language after the Wiki has got content. It is recommended to define the language only right after the installation. The chosen language is static for the whole wiki and can not be changed afterwards. (unless you translate all the content of course).
 
@@ -204,10 +204,10 @@ Fatal error: Call to undefined method SMWPropertyValue::userCan() in /var/www/we
 This problem occurs if HaloACL protects properties and SMW is not patched. There are two solutions for your problem (with HaloACL enabled):
 
 1. In HACL_Initialize.php, set ```$haclgProtectProperties=false;``` In this case, properties are not protected
-2. Apply the patch in patch_for_SMW_1.4.2.txt to SMW. This is the recommended solution.
+2. Apply the patch in patch\_for\_SMW_1.4.2.txt to SMW. This is the recommended solution.
 Information.png
   
-** Note:**  If you are using SMW 1.4.3 you have to look for ** patch_for_SMW_1.4.3.txt **, located at ** ..\extensions\HaloACL **
+**Note:**  If you are using SMW 1.4.3 you have to look for **patch_for_SMW_1.4.3.txt**, located at **..\extensions\HaloACL**
 
 ### Database query syntax error Special:Form
 
@@ -221,7 +221,7 @@ http://localhost/develwiki/index.php/Special:HaloACL?action=ajax&rs=haclCreateAC
 http://localhost/develwiki/index.php/Special:HaloACL?action=ajax&rs=haclCreateAclContent
 ```
 
-** How to track the ajax calls:**
+**How to track the ajax calls:**
 
 1. Open Firefox
 2. Click the little bug icon in the status bar at the bottom to activate Firebug.
@@ -231,40 +231,40 @@ http://localhost/develwiki/index.php/Special:HaloACL?action=ajax&rs=haclCreateAc
 6. You can switch to the Console of Firebug. It shows only the two ajax calls needed for Special:HaloACL
 7. Furthermore the console shows JavaScript errors or warnings. 
 
-** Note: ** This bug is fixed for HaloACL version 1.1.1. If Special:HaloACL is empty, first go through the installation instructions, then check if all needed patches are installed.
+**Note:** This bug is fixed for HaloACL version 1.1.1. If Special:HaloACL is empty, first go through the installation instructions, then check if all needed patches are installed.
 
 
 ## Configuration
 
 All configuration options are defined and described in ..\HaloACL\includes\HACL_Initialize.php.
 
-** $haclgUseFeaturesForGroupPermissions = true; **	Enable this variable if you want to use the HaloACL for defining global permissions. Otherwise a set of default permissions will be created that will overwrite all $wgGroupPermissions for anonymous ('*') and registered ('user') users. If this variable is set to true, you can further define features that will appear in the ACL as global permissions using the array $haclgFeature.
+**$haclgUseFeaturesForGroupPermissions = true;**	Enable this variable if you want to use the HaloACL for defining global permissions. Otherwise a set of default permissions will be created that will overwrite all $wgGroupPermissions for anonymous ('*') and registered ('user') users. If this variable is set to true, you can further define features that will appear in the ACL as global permissions using the array $haclgFeature.
 
-** $haclgFeature ** Normally the system variable is filled with some default permissions (system settings). You can extend this feature list by defining them in this array. (See: Configuring features for global permissions)
+**$haclgFeature** Normally the system variable is filled with some default permissions (system settings). You can extend this feature list by defining them in this array. (See: Configuring features for global permissions)
 
-** $haclgIP = $IP . '/extensions/HaloACL'; ** 	This is the path to your installation of HaloACL as seen on your local filesystem. Used against some PHP file path issues.
+**$haclgIP = $IP . '/extensions/HaloACL';** 	This is the path to your installation of HaloACL as seen on your local filesystem. Used against some PHP file path issues.
 
-** $haclgHaloScriptPath = $wgScriptPath . '/extensions/HaloACL'; ** This is the path to your installation of HaloACL as seen from the web. Change it if required ($wgScriptPath is the path to the base directory of your wiki). No final slash.
+**$haclgHaloScriptPath = $wgScriptPath . '/extensions/HaloACL';** This is the path to your installation of HaloACL as seen from the web. Change it if required ($wgScriptPath is the path to the base directory of your wiki). No final slash.
 
-** $haclgEnableTitleCheck = false; ** Set this variable to false to disable the patch that checks all titles for accessibility. Unfortunately, the Title-object does not check if an article can be accessed. A patch adds this functionality and checks every title that is created. If a title can not be accessed, a replacement title called "Permission denied" is returned. This is the best and securest way of protecting an article, however, it slows down things a bit.
+**$haclgEnableTitleCheck = false;** Set this variable to false to disable the patch that checks all titles for accessibility. Unfortunately, the Title-object does not check if an article can be accessed. A patch adds this functionality and checks every title that is created. If a title can not be accessed, a replacement title called "Permission denied" is returned. This is the best and securest way of protecting an article, however, it slows down things a bit.
 
-** $haclgOpenWikiAccess = true; ** If this value is <true>, all articles that have no security descriptor are fully accessible. Remember that security descriptor are also inherited via categories or namespaces. If it is <false>, no access is granted at all. Only the latest author of an article can create a security descriptor.
+**$haclgOpenWikiAccess = true;** If this value is <true>, all articles that have no security descriptor are fully accessible. Remember that security descriptor are also inherited via categories or namespaces. If it is <false>, no access is granted at all. Only the latest author of an article can create a security descriptor.
 
-** $haclgProtectProperties = true; ** If this value is <true>, semantic properties can be protected. If it is <false>, semantic properties are not protected even if they have security descriptors.
+**$haclgProtectProperties = true;** If this value is <true>, semantic properties can be protected. If it is <false>, semantic properties are not protected even if they have security descriptors.
 
-** $haclgBaseStore = HACL_STORE_SQL; ** By design several databases can be connected to HaloACL. (However, in the first version there is only an implementation for MySQL.) With this variable you can specify which store will actually be used. Possible values: - ```HACL_STORE_SQL```
+**$haclgBaseStore = HACL_STORE_SQL;** By design several databases can be connected to HaloACL. (However, in the first version there is only an implementation for MySQL.) With this variable you can specify which store will actually be used. Possible values: - ```HACL_STORE_SQL```
 
-** $haclgUnprotectableNamespaces = array('Main'); ** This array contains the names of all namespaces that can not be protected by HaloACL. This bears the risk that users can block all articles of a namespace if it has no security descriptor yet. On the other hand, if each namespace would have a security descriptor, then all authorized users for that namespace will be able to access all articles in that namespace, even if security descriptors for individual articles define another set authorized users. The name of the main namespace is 'Main'.
+**$haclgUnprotectableNamespaces = array('Main');** This array contains the names of all namespaces that can not be protected by HaloACL. This bears the risk that users can block all articles of a namespace if it has no security descriptor yet. On the other hand, if each namespace would have a security descriptor, then all authorized users for that namespace will be able to access all articles in that namespace, even if security descriptors for individual articles define another set authorized users. The name of the main namespace is 'Main'.
 
-** $haclgNewUserTemplate = "ACL:Template/NewUserTemplate"; ** This is the name of the master template that is used as default rights template for new users. Every user can define his own default rights for new pages. He does this in a security descriptor with the naming convention ```"ACL:Template/<username>"```. The content of this article is assigned to security descriptors that are automatically generated for new pages. However, for new users there is no default template. With this setting you can specify a master template (a name of an article) that is used to create a default template for new users. The master template is a normal security descriptor that can contain the variable ```"{{{user}}}"``` that will be replaced by the user's name.
+**$haclgNewUserTemplate = "ACL:Template/NewUserTemplate";** This is the name of the master template that is used as default rights template for new users. Every user can define his own default rights for new pages. He does this in a security descriptor with the naming convention ```"ACL:Template/<username>"```. The content of this article is assigned to security descriptors that are automatically generated for new pages. However, for new users there is no default template. With this setting you can specify a master template (a name of an article) that is used to create a default template for new users. The master template is a normal security descriptor that can contain the variable ```"{{{user}}}"``` that will be replaced by the user's name.
 
 (See: Creating security descriptors automatically.)
 
-** $haclgEvaluatorLog = false; ** 	If ```$haclgEvaluatorLog``` is true, you can specify the URL-parameter "hacllog=true". In this case HaloACL echos the reason why actions are permitted or prohibited.
+**$haclgEvaluatorLog = false;** 	If ```$haclgEvaluatorLog``` is true, you can specify the URL-parameter "hacllog=true". In this case HaloACL echos the reason why actions are permitted or prohibited.
 
-** $haclgEncryptionKey = "MY VERY SECRET KEY"; ** 	This key is used for protected properties in Semantic Forms. SF has to embed all values of input fields into the HTML of the form, even if fields are protected and not visible to the user (i.e. user has no right to read.) The values of all protected fields are encrypted with the given key. YOU SHOULD CHANGE THIS KEY AND KEEP IT SECRET.
+**$haclgEncryptionKey = "MY VERY SECRET KEY";** 	This key is used for protected properties in Semantic Forms. SF has to embed all values of input fields into the HTML of the form, even if fields are protected and not visible to the user (i.e. user has no right to read.) The values of all protected fields are encrypted with the given key. YOU SHOULD CHANGE THIS KEY AND KEEP IT SECRET.
 
-** $haclgThrowExceptionForMissingFeatures = true; ** 	The names of the features that are defined here are stored as reference in the database if they are actually used. If the definition of a feature is removed the corresponding rights can no longer be set. Normally this will lead to an exception that informs about the missing feature. If ```$haclgThrowExceptionForMissingFeatures``` is false, this exception will not be thrown and the rights for the missing feature will be silently ignored.
+**$haclgThrowExceptionForMissingFeatures = true;** 	The names of the features that are defined here are stored as reference in the database if they are actually used. If the definition of a feature is removed the corresponding rights can no longer be set. Normally this will lead to an exception that informs about the missing feature. If ```$haclgThrowExceptionForMissingFeatures``` is false, this exception will not be thrown and the rights for the missing feature will be silently ignored.
 
 ## Known issues
 ### Security exception during SMW refresh
