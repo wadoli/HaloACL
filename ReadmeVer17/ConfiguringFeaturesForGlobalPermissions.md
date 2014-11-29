@@ -112,7 +112,9 @@ Just in case you wish the access of one of the listed features,i.e 'upload' such
 Below is an overview of the classes that are involved in this new feature:
 [UML-GroupPermissions.png](UML-GroupPermissions.png)
 
-## Copyright and License
+** Copyright and License **
+
 Initial text © 2011 ontoprise GmbH.
 
 Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation; with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts. A copy of the license is included in the article [GNU Free Documentation License](http://www.gnu.org/licenses/fdl.html).
+
